@@ -36,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final provider = Provider.of<AppStateProvider>(context);
     final saveData = provider.activeSaveData;
     final locale = provider.locale;
+    final appVersion = provider.appVersion;
     final isMobile = MediaQuery.of(context).size.width < 800;
 
     final navItems = [
@@ -49,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     if (isMobile) {
-      // --- Layout Adaptativo para Móviles (Android / iOS) ---
+      // --- Layout Adaptativo para Móviles ---
       return Scaffold(
         appBar: AppBar(
           backgroundColor: StardewColors.cardBackground,
@@ -97,10 +98,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       const Icon(Icons.star_half, color: StardewColors.primaryGold, size: 40),
                       const SizedBox(height: 8),
                       Text(I18nService.get('app_name', locale), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: StardewColors.primaryGold)),
-                      if (saveData != null) ...[
-                        const SizedBox(height: 4),
-                        Text('Granjero: ${saveData.farmerName}', style: const TextStyle(color: StardewColors.textMuted, fontSize: 12)),
-                      ],
+                      const SizedBox(height: 4),
+                      Text('v$appVersion', style: const TextStyle(color: StardewColors.iridiumPurple, fontWeight: FontWeight.bold, fontSize: 12)),
                     ],
                   ),
                 ),
@@ -123,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       selected: isSelected,
                       onTap: () {
                         setState(() => _selectedIndex = index);
-                        Navigator.pop(context); // Cerrar Drawer
+                        Navigator.pop(context);
                       },
                     );
                   },
@@ -155,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    // --- Layout Adaptativo para PC / Desktop (Windows / Web / Tablet amplia) ---
+    // --- Layout Adaptativo para PC / Desktop ---
     return Scaffold(
       body: Row(
         children: [
@@ -183,7 +182,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: StardewColors.iridiumPurple.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text('v$appVersion', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: StardewColors.iridiumPurple)),
+                ),
+                const SizedBox(height: 16),
               ],
             ),
             destinations: navItems.map((item) {

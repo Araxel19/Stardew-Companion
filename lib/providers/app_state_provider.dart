@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../database/db_helper.dart';
 import '../models/crop_model.dart';
 import '../models/default_stardew_data.dart';
@@ -18,6 +19,9 @@ class AppStateProvider extends ChangeNotifier {
   String? _saveErrorMessage;
   String _selectedSeason = 'Primavera';
 
+  // Versión dinámica desde pubspec.yaml
+  String _appVersion = '0.1.0';
+
   // Opciones de Configuración
   String _locale = 'es'; // 'es' or 'en'
   StardewThemeMode _themeMode = StardewThemeMode.iridium;
@@ -31,6 +35,7 @@ class AppStateProvider extends ChangeNotifier {
   bool get isLoadingSave => _isLoadingSave;
   String? get saveErrorMessage => _saveErrorMessage;
   String get selectedSeason => _selectedSeason;
+  String get appVersion => _appVersion;
 
   String get locale => _locale;
   StardewThemeMode get themeMode => _themeMode;
@@ -41,6 +46,7 @@ class AppStateProvider extends ChangeNotifier {
 
   Future<void> _initData() async {
     _allCrops = List.from(DefaultStardewData.defaultCrops);
+    await _loadAppVersion();
     await refreshFarms();
     await refreshLedger();
     await refreshTasks();
@@ -54,6 +60,14 @@ class AppStateProvider extends ChangeNotifier {
       const defaultSavePath = r'C:\Users\Araxel\AppData\Roaming\StardewValley\Saves\NegroLand_420848748\NegroLand_420848748';
       await loadSaveFile(defaultSavePath);
     }
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      _appVersion = packageInfo.version;
+      notifyListeners();
+    } catch (_) {}
   }
 
   void setLocale(String newLocale) {
@@ -87,7 +101,6 @@ class AppStateProvider extends ChangeNotifier {
       _activeSaveData = saveData;
       _isLoadingSave = false;
 
-      // Registrar partida en SQLite para cambio rápido
       await DBHelper.saveFarmRecord(
         farmerName: saveData.farmerName,
         farmName: saveData.farmName,
