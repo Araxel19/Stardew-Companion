@@ -58,7 +58,7 @@ class VillagerAvatar extends StatelessWidget {
                   child: Image.asset(
                     'assets/images/stardew_villagers_avatar.jpg',
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox(),
+                    errorBuilder: (_, _, _) => const SizedBox(),
                   ),
                 ),
                 Text(
@@ -159,7 +159,7 @@ class CropAvatar extends StatelessWidget {
               child: Image.asset(
                 'assets/images/stardew_crops_avatar.jpg',
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox(),
+                errorBuilder: (_, _, _) => const SizedBox(),
               ),
             ),
             Text(

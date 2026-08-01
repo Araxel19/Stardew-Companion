@@ -12,7 +12,7 @@ import 'providers/save_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/task_provider.dart';
 import 'theme/stardew_theme.dart';
-import 'views/home_screen.dart';
+import 'views/splash_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -70,7 +70,7 @@ class StardewCompanionApp extends StatelessWidget {
             title: 'Stardew Companion',
             debugShowCheckedModeBanner: false,
             theme: StardewTheme.getTheme(settings.themeMode),
-            home: const HomeScreen(),
+            home: const SplashScreen(),
           );
         },
       ),

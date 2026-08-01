@@ -32,20 +32,14 @@ class AppStateProvider extends ChangeNotifier {
   String _lastSyncedFarmKey = '';
 
   AppStateProvider({
-    required SaveProvider saveProvider,
-    required CropProvider cropProvider,
-    required LedgerProvider ledgerProvider,
-    required TaskProvider taskProvider,
-    required ModProvider modProvider,
-    required SettingsProvider settingsProvider,
-    required PlantedCropProvider plantedCropProvider,
-  })  : _saveProvider = saveProvider,
-        _cropProvider = cropProvider,
-        _ledgerProvider = ledgerProvider,
-        _taskProvider = taskProvider,
-        _modProvider = modProvider,
-        _settingsProvider = settingsProvider,
-        _plantedCropProvider = plantedCropProvider {
+    required this._saveProvider,
+    required this._cropProvider,
+    required this._ledgerProvider,
+    required this._taskProvider,
+    required this._modProvider,
+    required this._settingsProvider,
+    required this._plantedCropProvider,
+  }) {
     _saveProvider.addListener(_onSaveChanged);
     _cropProvider.addListener(_relay);
     _ledgerProvider.addListener(_relay);

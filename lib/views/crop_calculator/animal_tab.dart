@@ -51,9 +51,12 @@ class _AnimalTabState extends State<AnimalTab> {
                     children: const [
                       Icon(Icons.pets, color: StardewColors.primaryGold),
                       SizedBox(width: 8),
-                      Text(
-                        'Simulador de Rentabilidad de Ganadería',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: StardewColors.primaryGold),
+                      Expanded(
+                        child: Text(
+                          'Simulador de Rentabilidad de Ganadería',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: StardewColors.primaryGold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),

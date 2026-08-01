@@ -61,9 +61,12 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               const Icon(Icons.star_half, color: StardewColors.primaryGold, size: 24),
               const SizedBox(width: 8),
-              Text(
-                navItems[_selectedIndex]['label'] as String,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: StardewColors.primaryGold),
+              Expanded(
+                child: Text(
+                  navItems[_selectedIndex]['label'] as String,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: StardewColors.primaryGold),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),

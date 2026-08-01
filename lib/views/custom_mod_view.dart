@@ -136,7 +136,7 @@ class _CustomModViewState extends State<CustomModView> {
                           children: [
                             Switch(
                               value: isEnabled,
-                              activeColor: StardewColors.emeraldGreen,
+                              activeThumbColor: StardewColors.emeraldGreen,
                               onChanged: (val) {
                                 modProvider.toggleModsForFarm(farmKey, val);
                               },
@@ -201,7 +201,7 @@ class _CustomModViewState extends State<CustomModView> {
                       child: ListView.separated(
                         shrinkWrap: true,
                         itemCount: installedMods.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        separatorBuilder: (_, _) => const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final mod = installedMods[index];
                           return MouseRegion(
@@ -255,7 +255,7 @@ class _CustomModViewState extends State<CustomModView> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: customCrops.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (_, _) => const Divider(height: 1),
                       itemBuilder: (context, index) {
                         final crop = customCrops[index];
                         return Material(
@@ -308,7 +308,7 @@ class _CustomModViewState extends State<CustomModView> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: _selectedSeason,
+                    initialValue: _selectedSeason,
                     decoration: const InputDecoration(labelText: 'Estación'),
                     items: ['Primavera', 'Verano', 'Otoño', 'Invernadero'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                     onChanged: (v) => setState(() => _selectedSeason = v!),

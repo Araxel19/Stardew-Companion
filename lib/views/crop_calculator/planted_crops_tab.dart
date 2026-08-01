@@ -75,9 +75,12 @@ class PlantedCropsTab extends StatelessWidget {
                     children: [
                       const Icon(Icons.pie_chart, color: StardewColors.primaryGold, size: 20),
                       const SizedBox(width: 8),
-                      Text(
-                        'Resumen Consolidado de Parcelas (${batches.length} lotes activos)',
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: StardewColors.textBright),
+                      Expanded(
+                        child: Text(
+                          'Resumen Consolidado de Parcelas (${batches.length} lotes activos)',
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: StardewColors.textBright),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
@@ -106,15 +109,16 @@ class PlantedCropsTab extends StatelessWidget {
           Wrap(
             alignment: WrapAlignment.spaceBetween,
             crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 10,
-            runSpacing: 10,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               const Text(
                 '🌾 Lotes Plantados en tu Granja',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: StardewColors.textBright),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   OutlinedButton.icon(
                     onPressed: () => _syncFromCalendar(context, plantedProvider, taskProvider, allCrops),
@@ -125,7 +129,6 @@ class PlantedCropsTab extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     ),
                   ),
-                  const SizedBox(width: 8),
                   ElevatedButton.icon(
                     onPressed: () => showBatchFormModal(context, allCrops: allCrops, plantedProvider: plantedProvider),
                     icon: const Icon(Icons.add, size: 18),
@@ -183,7 +186,7 @@ class PlantedCropsTab extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: batches.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
               itemBuilder: (ctx, index) {
                 final batch = batches[index];
                 final crop = _findCrop(allCrops, batch);
@@ -401,24 +404,29 @@ class PlantedCropsTab extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Fechas de Cosecha: ${harvestDays.map((d) => "D$d").join(", ")}  ·  $harvests cosechas',
-                      style: const TextStyle(fontSize: 12, color: StardewColors.textMuted),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Ganancia Neta Lote: ${fmt.format(netProfit)}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: netProfit >= 0 ? StardewColors.emeraldGreen : Colors.redAccent,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Fechas de Cosecha: ${harvestDays.map((d) => "D$d").join(", ")}  ·  $harvests cosechas',
+                        style: const TextStyle(fontSize: 12, color: StardewColors.textMuted),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 2),
+                      Text(
+                        'Ganancia Neta Lote: ${fmt.format(netProfit)}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: netProfit >= 0 ? StardewColors.emeraldGreen : Colors.redAccent,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 ElevatedButton.icon(
                   onPressed: harvestDays.isEmpty
                       ? null
@@ -607,7 +615,6 @@ class _BatchFormSheetState extends State<_BatchFormSheet> {
   late String _selectedSeason;
   late int _quantity;
   late int _plantDay;
-  late bool _alreadyPlanted;
   late int _daysUntilFirstHarvest;
   late int? _exactFirstHarvestDay;
   late int _timingMode; // 0: Día de Siembra, 1: Días Faltantes, 2: Día Exacto de Cosecha (1..28)
@@ -623,26 +630,23 @@ class _BatchFormSheetState extends State<_BatchFormSheet> {
       _selectedSeason = batch.season;
       _quantity = batch.quantity;
       _plantDay = batch.plantDay;
-      _alreadyPlanted = batch.alreadyPlanted;
       _daysUntilFirstHarvest = batch.daysUntilFirstHarvest;
       _exactFirstHarvestDay = batch.exactFirstHarvestDay;
-      if (batch.exactFirstHarvestDay != null && batch.exactFirstHarvestDay! > 0) {
-        _timingMode = 2;
-      } else if (batch.alreadyPlanted) {
-        _timingMode = 1;
-      } else {
-        _timingMode = 0;
-      }
+      _timingMode = batch.exactFirstHarvestDay != null
+          ? 2
+          : batch.alreadyPlanted
+              ? 1
+              : 0;
       _fertilizer = batch.fertilizer;
       _method = batch.processingMethod;
     } else {
-      _selectedCropName = widget.initialCropName ?? (widget.allCrops.isNotEmpty ? widget.allCrops.first.name : 'Chilacayote');
-      _selectedSeason = 'Primavera';
+      final firstCrop = widget.allCrops.isNotEmpty ? widget.allCrops.first : null;
+      _selectedCropName = firstCrop?.name ?? 'Chilacayote';
+      _selectedSeason = firstCrop?.season ?? 'Primavera';
       _quantity = widget.initialQuantity ?? 20;
       _plantDay = 1;
-      _alreadyPlanted = false;
-      _daysUntilFirstHarvest = 5;
-      _exactFirstHarvestDay = 10;
+      _daysUntilFirstHarvest = firstCrop?.daysToGrow ?? 4;
+      _exactFirstHarvestDay = null;
       _timingMode = 0;
       _fertilizer = Fertilizer.none;
       _method = ProcessingMethod.keg;
@@ -752,11 +756,12 @@ class _BatchFormSheetState extends State<_BatchFormSheet> {
                       title: const Text('Siembra normal (por día de siembra)', style: TextStyle(fontSize: 13, color: StardewColors.textBright)),
                       subtitle: const Text('Calcula días según ciclo de crecimiento del cultivo', style: TextStyle(fontSize: 11, color: StardewColors.textMuted)),
                       value: 0,
+                      // ignore: deprecated_member_use
                       groupValue: _timingMode,
                       activeColor: StardewColors.primaryGold,
+                      // ignore: deprecated_member_use
                       onChanged: (v) => setState(() {
                         _timingMode = v!;
-                        _alreadyPlanted = false;
                         _exactFirstHarvestDay = null;
                       }),
                     ),
@@ -764,11 +769,12 @@ class _BatchFormSheetState extends State<_BatchFormSheet> {
                       title: const Text('En progreso (ingresar días faltantes)', style: TextStyle(fontSize: 13, color: StardewColors.textBright)),
                       subtitle: const Text('Util para cultivos ya sembrados hace días', style: TextStyle(fontSize: 11, color: StardewColors.textMuted)),
                       value: 1,
+                      // ignore: deprecated_member_use
                       groupValue: _timingMode,
                       activeColor: StardewColors.emeraldGreen,
+                      // ignore: deprecated_member_use
                       onChanged: (v) => setState(() {
                         _timingMode = v!;
-                        _alreadyPlanted = true;
                         _exactFirstHarvestDay = null;
                       }),
                     ),
@@ -776,11 +782,12 @@ class _BatchFormSheetState extends State<_BatchFormSheet> {
                       title: const Text('Día exacto de Cosecha en el Juego (1..28)', style: TextStyle(fontSize: 13, color: StardewColors.textBright)),
                       subtitle: const Text('Si ya sabes el día exacto por tu UI/Mod en el juego', style: TextStyle(fontSize: 11, color: StardewColors.textMuted)),
                       value: 2,
+                      // ignore: deprecated_member_use
                       groupValue: _timingMode,
                       activeColor: StardewColors.oceanBlue,
+                      // ignore: deprecated_member_use
                       onChanged: (v) => setState(() {
                         _timingMode = v!;
-                        _alreadyPlanted = true;
                         _exactFirstHarvestDay = _exactFirstHarvestDay ?? 10;
                       }),
                     ),

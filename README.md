@@ -1,11 +1,11 @@
 <div align="center">
 
-# 🌟 Stardew Companion `v0.3.0`
+# 🌟 Stardew Companion `v0.3.1`
 
 ### *De Jugadores para Jugadores — La Herramienta Definitiva para la Perfección y Organización en Stardew Valley*
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.44-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
-[![Version](https://img.shields.io/badge/Version-v0.3.0-F59E0B?style=for-the-badge)](https://github.com/Araxel19/Stardew-Companion/releases)
+[![Version](https://img.shields.io/badge/Version-v0.3.1-F59E0B?style=for-the-badge)](https://github.com/Araxel19/Stardew-Companion/releases)
 [![SQLite](https://img.shields.io/badge/SQLite-Local_DB-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Mods Supported](https://img.shields.io/badge/Mods-SVE%20%7C%20Ridgeside%20%7C%20Custom-purple?style=for-the-badge)](https://nexusmods.com/stardewvalley)

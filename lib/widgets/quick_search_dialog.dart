@@ -98,15 +98,17 @@ class _QuickSearchDialogState extends State<QuickSearchDialog> {
               children: [
                 const Icon(Icons.search, color: StardewColors.primaryGold, size: 28),
                 const SizedBox(width: 10),
-                const Text(
-                  'Buscador Universal de Stardew',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: StardewColors.primaryGold,
+                const Expanded(
+                  child: Text(
+                    'Buscador Universal de Stardew',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: StardewColors.primaryGold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.close, color: StardewColors.textMuted),
                   onPressed: () => Navigator.of(context).pop(),

@@ -16,7 +16,7 @@ class _LedgerViewState extends State<LedgerView> {
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
   String _selectedType = 'income'; // 'income' or 'expense'
-  String _selectedCategory = 'Cultivos';
+  final String _selectedCategory = 'Cultivos';
 
   @override
   Widget build(BuildContext context) {
@@ -151,7 +151,7 @@ class _LedgerViewState extends State<LedgerView> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: entries.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (_, _) => const Divider(height: 1),
                       itemBuilder: (context, index) {
                         final entry = entries[index];
                         final isIncome = entry['type'] == 'income';
@@ -161,7 +161,7 @@ class _LedgerViewState extends State<LedgerView> {
                           color: Colors.transparent,
                           child: ListTile(
                             leading: CircleAvatar(
-                              backgroundColor: isIncome ? StardewColors.emeraldGreen.withOpacity(0.2) : StardewColors.rubyRed.withOpacity(0.2),
+                              backgroundColor: isIncome ? StardewColors.emeraldGreen.withValues(alpha: 0.2) : StardewColors.rubyRed.withValues(alpha: 0.2),
                               child: Icon(
                                 isIncome ? Icons.arrow_downward : Icons.arrow_upward,
                                 color: isIncome ? StardewColors.emeraldGreen : StardewColors.rubyRed,
@@ -251,7 +251,9 @@ class _LedgerViewState extends State<LedgerView> {
                         child: RadioListTile<String>(
                           title: const Text('Ingreso'),
                           value: 'income',
+                          // ignore: deprecated_member_use
                           groupValue: _selectedType,
+                          // ignore: deprecated_member_use
                           onChanged: (v) => setDialogState(() => _selectedType = v!),
                         ),
                       ),
@@ -259,7 +261,9 @@ class _LedgerViewState extends State<LedgerView> {
                         child: RadioListTile<String>(
                           title: const Text('Gasto'),
                           value: 'expense',
+                          // ignore: deprecated_member_use
                           groupValue: _selectedType,
+                          // ignore: deprecated_member_use
                           onChanged: (v) => setDialogState(() => _selectedType = v!),
                         ),
                       ),

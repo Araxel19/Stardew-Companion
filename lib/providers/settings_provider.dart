@@ -9,7 +9,7 @@ import '../theme/stardew_theme.dart';
 class SettingsProvider extends ChangeNotifier {
   String _locale = 'es';
   StardewThemeMode _themeMode = StardewThemeMode.iridium;
-  String _appVersion = '0.2.0';
+  String _appVersion = '0.3.1';
 
   String get locale => _locale;
   StardewThemeMode get themeMode => _themeMode;

@@ -549,7 +549,7 @@ class _BitcoinChart extends StatelessWidget {
                       barWidth: 2.5,
                       dotData: FlDotData(
                         show: true,
-                        getDotPainter: (spot, _, __, ___) {
+                        getDotPainter: (spot, _, _, _) {
                           final day = spot.x.toInt();
                           if (harvestDays.contains(day)) {
                             return FlDotCirclePainter(radius: 5, color: StardewColors.primaryGold,
@@ -656,29 +656,37 @@ class _InvestmentSummary extends StatelessWidget {
               children: [
                 const Icon(Icons.account_balance_wallet, color: StardewColors.primaryGold, size: 20),
                 const SizedBox(width: 8),
-                Text('Resumen de Inversión — ${crop.name}',
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: StardewColors.textBright)),
+                Expanded(
+                  child: Text('Resumen de Inversión — ${crop.name}',
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: StardewColors.textBright),
+                      overflow: TextOverflow.ellipsis),
+                ),
               ],
             ),
             const SizedBox(height: 12),
-            GridView.count(
-              crossAxisCount: 3,
-              shrinkWrap: true,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: 2.2,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                _statBox('💰 Inversión', fmt.format(seedCost), StardewColors.primaryGold),
-                _statBox('🌾 Cosechas', '$harvests × $cropQuantity', StardewColors.oceanBlue),
-                _statBox('📦 Ingreso Bruto', fmt.format(grossRevenue), StardewColors.textBright),
-                _statBox('✅ Ganancia Neta', fmt.format(netProfit),
-                    netProfit >= 0 ? StardewColors.emeraldGreen : Colors.redAccent),
-                _statBox('📈 ROI', '${roi.toStringAsFixed(0)}%', StardewColors.iridiumPurple),
-                _statBox('⏱️ Break-even',
-                    breakEvenDay > 0 ? 'Día $breakEvenDay' : 'Sin ganancia',
-                    breakEvenDay > 0 ? StardewColors.emeraldGreen : Colors.redAccent),
-              ],
+            Builder(
+              builder: (context) {
+                final isMobile = MediaQuery.of(context).size.width < 700;
+                return GridView.count(
+                  crossAxisCount: isMobile ? 2 : 3,
+                  shrinkWrap: true,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: isMobile ? 2.6 : 2.2,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    _statBox('💰 Inversión', fmt.format(seedCost), StardewColors.primaryGold),
+                    _statBox('🌾 Cosechas', '$harvests × $cropQuantity', StardewColors.oceanBlue),
+                    _statBox('📦 Ingreso Bruto', fmt.format(grossRevenue), StardewColors.textBright),
+                    _statBox('✅ Ganancia Neta', fmt.format(netProfit),
+                        netProfit >= 0 ? StardewColors.emeraldGreen : Colors.redAccent),
+                    _statBox('📈 ROI', '${roi.toStringAsFixed(0)}%', StardewColors.iridiumPurple),
+                    _statBox('⏱️ Break-even',
+                        breakEvenDay > 0 ? 'Día $breakEvenDay' : 'Sin ganancia',
+                        breakEvenDay > 0 ? StardewColors.emeraldGreen : Colors.redAccent),
+                  ],
+                );
+              },
             ),
             Builder(
               builder: (ctx) {
@@ -720,7 +728,7 @@ class _InvestmentSummary extends StatelessWidget {
 
   Widget _statBox(String label, String value, Color color) {
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: StardewColors.cardBackground,
         borderRadius: BorderRadius.circular(10),
@@ -730,10 +738,17 @@ class _InvestmentSummary extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(label, style: const TextStyle(fontSize: 10, color: StardewColors.textMuted)),
-          Text(value,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color),
-              overflow: TextOverflow.ellipsis),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(label, style: const TextStyle(fontSize: 10, color: StardewColors.textMuted)),
+          ),
+          const SizedBox(height: 2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
+          ),
         ],
       ),
     );

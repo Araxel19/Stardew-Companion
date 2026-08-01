@@ -68,8 +68,11 @@ class DayByDayTab extends StatelessWidget {
                 children: [
                   const Icon(Icons.table_chart, color: StardewColors.primaryGold, size: 20),
                   const SizedBox(width: 8),
-                  Text('Flujo de Caja — ${crop.name} · $cropQuantity parcelas',
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: StardewColors.textBright)),
+                  Expanded(
+                    child: Text('Flujo de Caja — ${crop.name} · $cropQuantity parcelas',
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: StardewColors.textBright),
+                        overflow: TextOverflow.ellipsis),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),

@@ -168,9 +168,12 @@ class PipelineTab extends StatelessWidget {
                             children: [
                               const Icon(Icons.auto_fix_high, size: 14, color: StardewColors.oceanBlue),
                               const SizedBox(width: 6),
-                              Text(
-                                'Usar recomendado: ${result.recommendedEquipment} ${equipmentName.toLowerCase()}',
-                                style: const TextStyle(color: StardewColors.oceanBlue, fontSize: 12, fontWeight: FontWeight.w600),
+                              Flexible(
+                                child: Text(
+                                  'Usar recomendado: ${result.recommendedEquipment} ${equipmentName.toLowerCase()}',
+                                  style: const TextStyle(color: StardewColors.oceanBlue, fontSize: 12, fontWeight: FontWeight.w600),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ],
                           ),

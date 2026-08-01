@@ -51,6 +51,8 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
           color: StardewColors.cardBackground,
           child: TabBar(
             controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
             indicatorColor: StardewColors.primaryGold,
             labelColor: StardewColors.primaryGold,
             unselectedLabelColor: StardewColors.textMuted,
@@ -187,26 +189,32 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: isMobile ? 4 : 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: StardewColors.cardBorder,
-                                  borderRadius: BorderRadius.circular(4),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: isMobile ? 3 : 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: StardewColors.cardBorder,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'D$dayNumber',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 10 : 12, color: StardewColors.primaryGold),
+                                  ),
                                 ),
-                                child: Text(
-                                  'D$dayNumber',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 10 : 12, color: StardewColors.primaryGold),
-                                ),
-                              ),
-                              if (isTravelingCart)
-                                const Tooltip(
-                                  message: 'Carro Ambulante disponible hoy',
-                                  child: Icon(Icons.shopping_cart, size: 14, color: StardewColors.iridiumPurple),
-                                ),
-                            ],
+                                if (isTravelingCart) ...[
+                                  SizedBox(width: isMobile ? 2 : 4),
+                                  const Tooltip(
+                                    message: 'Carro Ambulante disponible hoy',
+                                    child: Icon(Icons.shopping_cart, size: 12, color: StardewColors.iridiumPurple),
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 4),
 
@@ -323,43 +331,85 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
       child: Column(
         children: [
           // Bar de Búsqueda y Filtros
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  style: const TextStyle(color: StardewColors.textBright),
-                  decoration: InputDecoration(
-                    hintText: 'Buscar aldeano o regalo favorito (ej. Amethyst, Abigail)...',
-                    hintStyle: const TextStyle(color: StardewColors.textMuted, fontSize: 13),
-                    prefixIcon: const Icon(Icons.search, color: StardewColors.primaryGold),
-                    filled: true,
-                    fillColor: StardewColors.cardBackground,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  ),
-                  onChanged: (val) => setState(() => _searchQuery = val),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Wrap(
-                spacing: 6,
-                children: ['Todos', 'Solteros', 'Mods'].map((filter) {
-                  final isSelected = _villagerFilter == filter;
-                  return MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: ChoiceChip(
-                      label: Text(filter),
-                      selected: isSelected,
-                      selectedColor: StardewColors.primaryGold,
-                      labelStyle: TextStyle(color: isSelected ? Colors.black : Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                      onSelected: (val) {
-                        if (val) setState(() => _villagerFilter = filter);
-                      },
+          isMobile
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      style: const TextStyle(color: StardewColors.textBright),
+                      decoration: InputDecoration(
+                        hintText: 'Buscar aldeano o regalo favorito...',
+                        hintStyle: const TextStyle(color: StardewColors.textMuted, fontSize: 13),
+                        prefixIcon: const Icon(Icons.search, color: StardewColors.primaryGold),
+                        filled: true,
+                        fillColor: StardewColors.cardBackground,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                      onChanged: (val) => setState(() => _searchQuery = val),
                     ),
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: ['Todos', 'Solteros', 'Mods'].map((filter) {
+                          final isSelected = _villagerFilter == filter;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6.0),
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: ChoiceChip(
+                                label: Text(filter),
+                                selected: isSelected,
+                                selectedColor: StardewColors.primaryGold,
+                                labelStyle: TextStyle(color: isSelected ? Colors.black : Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                onSelected: (val) {
+                                  if (val) setState(() => _villagerFilter = filter);
+                                },
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        style: const TextStyle(color: StardewColors.textBright),
+                        decoration: InputDecoration(
+                          hintText: 'Buscar aldeano o regalo favorito (ej. Amethyst, Abigail)...',
+                          hintStyle: const TextStyle(color: StardewColors.textMuted, fontSize: 13),
+                          prefixIcon: const Icon(Icons.search, color: StardewColors.primaryGold),
+                          filled: true,
+                          fillColor: StardewColors.cardBackground,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        ),
+                        onChanged: (val) => setState(() => _searchQuery = val),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Wrap(
+                      spacing: 6,
+                      children: ['Todos', 'Solteros', 'Mods'].map((filter) {
+                        final isSelected = _villagerFilter == filter;
+                        return MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: ChoiceChip(
+                            label: Text(filter),
+                            selected: isSelected,
+                            selectedColor: StardewColors.primaryGold,
+                            labelStyle: TextStyle(color: isSelected ? Colors.black : Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                            onSelected: (val) {
+                              if (val) setState(() => _villagerFilter = filter);
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
           const SizedBox(height: 16),
 
           // Lista de Aldeanos con Fotos de Avatar y Progreso Real
@@ -384,62 +434,129 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    VillagerAvatar(
-                                      name: v.name,
-                                      isDatable: v.isDatable,
-                                      isModded: v.isModded,
-                                      size: 48,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
+                            isMobile
+                                ? Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          VillagerAvatar(
+                                            name: v.name,
+                                            isDatable: v.isDatable,
+                                            isModded: v.isModded,
+                                            size: 44,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        v.name,
+                                                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: StardewColors.textBright),
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                    ),
+                                                    if (v.isModded) ...[
+                                                      const SizedBox(width: 6),
+                                                      Chip(
+                                                        label: Text(v.sourceMod ?? 'Mod', style: const TextStyle(fontSize: 9, color: Colors.white)),
+                                                        backgroundColor: StardewColors.iridiumPurple.withValues(alpha: 0.4),
+                                                        visualDensity: VisualDensity.compact,
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ),
+                                                Text('Cumpleaños: ${v.season} Día ${v.day}', style: const TextStyle(fontSize: 12, color: StardewColors.textMuted)),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerLeft,
+                                        child: Row(
                                           children: [
-                                            Text(v.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: StardewColors.textBright)),
-                                            if (v.isModded) ...[
-                                              const SizedBox(width: 8),
-                                              Chip(
-                                                label: Text(v.sourceMod ?? 'Mod', style: const TextStyle(fontSize: 10, color: Colors.white)),
-                                                backgroundColor: StardewColors.iridiumPurple.withValues(alpha: 0.4),
-                                                visualDensity: VisualDensity.compact,
-                                              ),
-                                            ],
+                                            Row(
+                                              children: List.generate(10, (hIndex) {
+                                                return Icon(
+                                                  hIndex < hearts ? Icons.favorite : Icons.favorite_border,
+                                                  color: hIndex < hearts ? StardewColors.rubyRed : StardewColors.textMuted,
+                                                  size: 15,
+                                                );
+                                              }),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              '$hearts / 10 Corazones ($points pts)',
+                                              style: const TextStyle(fontSize: 11, color: StardewColors.primaryGold, fontWeight: FontWeight.bold),
+                                            ),
                                           ],
                                         ),
-                                        Text('Cumpleaños: ${v.season} Día ${v.day}', style: const TextStyle(fontSize: 12, color: StardewColors.textMuted)),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                                      ),
+                                    ],
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          VillagerAvatar(
+                                            name: v.name,
+                                            isDatable: v.isDatable,
+                                            isModded: v.isModded,
+                                            size: 48,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Text(v.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: StardewColors.textBright)),
+                                                  if (v.isModded) ...[
+                                                    const SizedBox(width: 8),
+                                                    Chip(
+                                                      label: Text(v.sourceMod ?? 'Mod', style: const TextStyle(fontSize: 10, color: Colors.white)),
+                                                      backgroundColor: StardewColors.iridiumPurple.withValues(alpha: 0.4),
+                                                      visualDensity: VisualDensity.compact,
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                              Text('Cumpleaños: ${v.season} Día ${v.day}', style: const TextStyle(fontSize: 12, color: StardewColors.textMuted)),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
 
-                                // Amistad & Corazones
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Row(
-                                      children: List.generate(10, (hIndex) {
-                                        return Icon(
-                                          hIndex < hearts ? Icons.favorite : Icons.favorite_border,
-                                          color: hIndex < hearts ? StardewColors.rubyRed : StardewColors.textMuted,
-                                          size: 16,
-                                        );
-                                      }),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '$hearts / 10 Corazones ($points pts)',
-                                      style: const TextStyle(fontSize: 11, color: StardewColors.primaryGold, fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                                      // Amistad & Corazones
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Row(
+                                            children: List.generate(10, (hIndex) {
+                                              return Icon(
+                                                hIndex < hearts ? Icons.favorite : Icons.favorite_border,
+                                                color: hIndex < hearts ? StardewColors.rubyRed : StardewColors.textMuted,
+                                                size: 16,
+                                              );
+                                            }),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '$hearts / 10 Corazones ($points pts)',
+                                            style: const TextStyle(fontSize: 11, color: StardewColors.primaryGold, fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                             const Divider(height: 20),
 
                             // Regalos Favoritos (Loved Gifts)
@@ -743,7 +860,7 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
             style: ElevatedButton.styleFrom(backgroundColor: StardewColors.cardBorder),
             onPressed: () async {
               await provider.deleteTask(task['id']);
-              Navigator.pop(dlgCtx);
+              if (dlgCtx.mounted) Navigator.pop(dlgCtx);
               onRefreshModal();
             },
             child: const Text('Solo esta fecha'),
@@ -762,7 +879,7 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                     await provider.deleteTask(t['id']);
                   }
                 }
-                Navigator.pop(dlgCtx);
+                if (dlgCtx.mounted) Navigator.pop(dlgCtx);
                 onRefreshModal();
               },
               child: const Text('Eliminar Cultivo Completo'),
