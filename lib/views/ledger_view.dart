@@ -157,32 +157,35 @@ class _LedgerViewState extends State<LedgerView> {
                         final isIncome = entry['type'] == 'income';
                         final amount = (entry['amount'] as num).toDouble();
 
-                        return ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: isIncome ? StardewColors.emeraldGreen.withOpacity(0.2) : StardewColors.rubyRed.withOpacity(0.2),
-                            child: Icon(
-                              isIncome ? Icons.arrow_downward : Icons.arrow_upward,
-                              color: isIncome ? StardewColors.emeraldGreen : StardewColors.rubyRed,
+                        return Material(
+                          color: Colors.transparent,
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: isIncome ? StardewColors.emeraldGreen.withOpacity(0.2) : StardewColors.rubyRed.withOpacity(0.2),
+                              child: Icon(
+                                isIncome ? Icons.arrow_downward : Icons.arrow_upward,
+                                color: isIncome ? StardewColors.emeraldGreen : StardewColors.rubyRed,
+                              ),
                             ),
-                          ),
-                          title: Text(entry['title'], style: const TextStyle(fontWeight: FontWeight.bold, color: StardewColors.textBright)),
-                          subtitle: Text('${entry['category']} • ${entry['date']}'),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '${isIncome ? '+' : '-'}${currencyFormatter.format(amount)}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: isIncome ? StardewColors.emeraldGreen : StardewColors.rubyRed,
+                            title: Text(entry['title'], style: const TextStyle(fontWeight: FontWeight.bold, color: StardewColors.textBright)),
+                            subtitle: Text('${entry['category']} • ${entry['date']}'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '${isIncome ? '+' : '-'}${currencyFormatter.format(amount)}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: isIncome ? StardewColors.emeraldGreen : StardewColors.rubyRed,
+                                  ),
                                 ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline, color: StardewColors.textMuted, size: 20),
-                                onPressed: () => provider.deleteLedgerEntry(entry['id']),
-                              ),
-                            ],
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: StardewColors.textMuted, size: 20),
+                                  onPressed: () => provider.deleteLedgerEntry(entry['id']),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },

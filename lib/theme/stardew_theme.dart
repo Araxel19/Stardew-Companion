@@ -63,6 +63,62 @@ class StardewTheme {
           borderRadius: BorderRadius.circular(16),
         ),
       ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ButtonStyle(
+          mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
+          overlayColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.hovered)) return primaryColor.withValues(alpha: 0.15);
+            if (states.contains(WidgetState.pressed)) return primaryColor.withValues(alpha: 0.25);
+            return null;
+          }),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: ButtonStyle(
+          mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
+          overlayColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.hovered)) return primaryColor.withValues(alpha: 0.15);
+            return null;
+          }),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: ButtonStyle(
+          mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
+          overlayColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.hovered)) return primaryColor.withValues(alpha: 0.15);
+            return null;
+          }),
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: ButtonStyle(
+          mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
+        ),
+      ),
+      listTileTheme: ListTileThemeData(
+        mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
+        iconColor: StardewColors.textMuted,
+        selectedColor: primaryColor,
+      ),
+      navigationRailTheme: NavigationRailThemeData(
+        indicatorColor: primaryColor.withValues(alpha: 0.25),
+        unselectedIconTheme: const IconThemeData(color: StardewColors.textMuted, size: 24),
+        selectedIconTheme: IconThemeData(color: secondaryColor, size: 26),
+        unselectedLabelTextStyle: const TextStyle(color: StardewColors.textMuted),
+        selectedLabelTextStyle: TextStyle(color: secondaryColor, fontWeight: FontWeight.bold),
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
+        selectedItemColor: primaryColor,
+        unselectedItemColor: StardewColors.textMuted,
+      ),
+      tabBarTheme: TabBarThemeData(
+        mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
+      ),
       dividerColor: StardewColors.cardBorder,
     );
   }

@@ -25,8 +25,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
   FlutterWindow window(project);
-  Win32Window::Point origin(10, 10);
   Win32Window::Size size(1280, 720);
+
+  RECT work_area;
+  ::SystemParametersInfo(SPI_GETWORKAREA, 0, &work_area, 0);
+  int x = work_area.left + (work_area.right - work_area.left - size.width) / 2;
+  int y = work_area.top + (work_area.bottom - work_area.top - size.height) / 2;
+  if (x < 0) x = 0;
+  if (y < 0) y = 0;
+
+  Win32Window::Point origin(x, y);
   if (!window.Create(L"stardew_companion", origin, size)) {
     return EXIT_FAILURE;
   }

@@ -1,18 +1,76 @@
+// Enums de dominio agrícola
 enum Fertilizer { none, basicSpeedGro, deluxeSpeedGro, hyperSpeedGro }
 enum Profession { none, agriculturist, tiller, artisan }
 enum ProcessingMethod { raw, jar, keg, dehydrator }
 
+// ─────────────────────────────────────────────────────────────
+//  Value objects de resultado (usados por CropCalculatorService)
+// ─────────────────────────────────────────────────────────────
+
+/// Un punto de datos para la curva de ganancias acumuladas (estilo Bitcoin).
+class DailyEarning {
+  final int day;
+  final double earned;      // ganancia ese día (0 si no hay cosecha)
+  final double cumulative;  // ganancia acumulada hasta ese día
+  final bool isHarvestDay;
+
+  const DailyEarning({
+    required this.day,
+    required this.earned,
+    required this.cumulative,
+    required this.isHarvestDay,
+  });
+}
+
+/// Resultado del simulador de pipeline de procesamiento.
+class PipelineResult {
+  final int totalCrops;          // cultivos cosechados en la estación
+  final int totalProcessed;      // cuántos se alcanzaron a procesar
+  final int daysToProcessAll;    // días totales hasta procesar todos
+  final int recommendedEquipment; // equipos óptimos para no tener cuello de botella
+  final bool hasBottleneck;
+  final String bottleneckMessage;
+  final double totalRevenue;     // ingreso bruto procesado
+  final double seedCost;
+  final double netProfit;
+  /// Lotes para el diagrama de Gantt: {equipment, startDay, endDay, batch}
+  final List<Map<String, dynamic>> batches;
+
+  const PipelineResult({
+    required this.totalCrops,
+    required this.totalProcessed,
+    required this.daysToProcessAll,
+    required this.recommendedEquipment,
+    required this.hasBottleneck,
+    required this.bottleneckMessage,
+    required this.totalRevenue,
+    required this.seedCost,
+    required this.netProfit,
+    required this.batches,
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+//  ENTIDAD PURA — solo describe un cultivo
+//  La lógica de cálculo vive en CropCalculatorService
+// ─────────────────────────────────────────────────────────────
+
+/// Representa un cultivo con sus atributos básicos.
+///
+/// Esta clase es una **entidad de dominio pura** — solo contiene datos.
+/// Toda lógica de cálculo (crecimiento, cosechas, rentabilidad, pipeline)
+/// se encuentra en [CropCalculatorService].
 class CropModel {
   final String id;
   final String name;
-  final String season; // Primavera, Verano, Otoño, Invierno, Invernadero
+  final String season; // Primavera | Verano | Otoño | Invierno | Invernadero
   final double seedCost;
   final double baseSellPrice;
   final int daysToGrow;
-  final int regrowDays; // 0 if single harvest
-  final String sourceMod; // 'Vanilla', 'Ridgeside Village', 'Stardew Valley Expanded', etc.
+  final int regrowDays; // 0 = cosecha única
+  final String sourceMod; // 'Vanilla' | 'Ridgeside Village' | etc.
 
-  CropModel({
+  const CropModel({
     required this.id,
     required this.name,
     required this.season,
@@ -22,111 +80,4 @@ class CropModel {
     this.regrowDays = 0,
     this.sourceMod = 'Vanilla',
   });
-
-  // Días de crecimiento calculados con fertilizante y profesión
-  int getEffectiveGrowthDays({Fertilizer fertilizer = Fertilizer.none, bool isAgriculturist = false}) {
-    double speedBonus = 0.0;
-    if (fertilizer == Fertilizer.basicSpeedGro) speedBonus += 0.10;
-    if (fertilizer == Fertilizer.deluxeSpeedGro) speedBonus += 0.15;
-    if (fertilizer == Fertilizer.hyperSpeedGro) speedBonus += 0.25;
-    if (isAgriculturist) speedBonus += 0.10;
-
-    int reducedDays = (daysToGrow * (1.0 - speedBonus)).floor();
-    return reducedDays < 1 ? 1 : reducedDays;
-  }
-
-  // Número total de cosechas en una estación de 28 días
-  int totalHarvestsInSeason({
-    int plantDay = 1,
-    Fertilizer fertilizer = Fertilizer.none,
-    bool isAgriculturist = false,
-  }) {
-    int effectiveGrowth = getEffectiveGrowthDays(fertilizer: fertilizer, isAgriculturist: isAgriculturist);
-    int remainingDays = 28 - plantDay + 1;
-
-    if (remainingDays < effectiveGrowth) return 0;
-
-    if (regrowDays <= 0) {
-      // Cosecha única - cuántas veces se puede resembrar
-      return (remainingDays / effectiveGrowth).floor();
-    } else {
-      // Cultivo recurrente
-      int harvests = 1;
-      int daysLeft = remainingDays - effectiveGrowth;
-      harvests += (daysLeft / regrowDays).floor();
-      return harvests;
-    }
-  }
-
-  // Fechas exactas de cosecha en el calendario de 28 días
-  List<int> getHarvestDays({
-    int plantDay = 1,
-    Fertilizer fertilizer = Fertilizer.none,
-    bool isAgriculturist = false,
-  }) {
-    List<int> harvestDays = [];
-    int effectiveGrowth = getEffectiveGrowthDays(fertilizer: fertilizer, isAgriculturist: isAgriculturist);
-    int currentDay = plantDay + effectiveGrowth;
-
-    while (currentDay <= 28) {
-      harvestDays.add(currentDay);
-      if (regrowDays <= 0) {
-        currentDay += effectiveGrowth; // Resembrar
-      } else {
-        currentDay += regrowDays; // Re-cosecha
-      }
-    }
-    return harvestDays;
-  }
-
-  // Precios de venta procesados
-  double getSellPrice({
-    ProcessingMethod method = ProcessingMethod.raw,
-    bool isTiller = false,
-    bool isArtisan = false,
-  }) {
-    double price = baseSellPrice;
-
-    switch (method) {
-      case ProcessingMethod.raw:
-        if (isTiller) price *= 1.10;
-        break;
-      case ProcessingMethod.jar:
-        price = (2 * baseSellPrice) + 50;
-        if (isArtisan) price *= 1.40;
-        break;
-      case ProcessingMethod.keg:
-        // Frutas multiplicador 3x, Vegetales multiplicador 2.25x
-        price = baseSellPrice * 3.0; 
-        if (isArtisan) price *= 1.40;
-        break;
-      case ProcessingMethod.dehydrator:
-        price = (1.5 * baseSellPrice * 5) + 5;
-        if (isArtisan) price *= 1.40;
-        break;
-    }
-    return price;
-  }
-
-  // Ganancia neta por día
-  double calculateDailyProfit({
-    int plantDay = 1,
-    Fertilizer fertilizer = Fertilizer.none,
-    bool isAgriculturist = false,
-    bool isTiller = false,
-    bool isArtisan = false,
-    ProcessingMethod method = ProcessingMethod.raw,
-    int cropQuantity = 1,
-  }) {
-    int harvests = totalHarvestsInSeason(plantDay: plantDay, fertilizer: fertilizer, isAgriculturist: isAgriculturist);
-    if (harvests == 0) return 0;
-
-    double itemPrice = getSellPrice(method: method, isTiller: isTiller, isArtisan: isArtisan);
-    int seedTimes = regrowDays > 0 ? 1 : harvests;
-    double totalSeedCost = seedCost * seedTimes * cropQuantity;
-    double totalRevenue = itemPrice * harvests * cropQuantity;
-
-    double netProfit = totalRevenue - totalSeedCost;
-    return netProfit / 28.0;
-  }
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../application/perfection_service.dart';
 import '../providers/app_state_provider.dart';
 import '../services/i18n_service.dart';
 import '../theme/stardew_theme.dart';
+import '../widgets/quick_search_dialog.dart';
 import 'calendar_view.dart';
 import 'crop_calculator_view.dart';
 import 'custom_mod_view.dart';
@@ -66,6 +68,44 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.search, color: StardewColors.primaryGold),
+              tooltip: 'Buscador Universal (Cultivos, Aldeanos, Tareas...)',
+              onPressed: () => QuickSearchDialog.show(context),
+            ),
+            if (provider.savedFarms.isNotEmpty)
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.swap_horiz, color: StardewColors.primaryGold),
+                tooltip: 'Cambiar de partida',
+                onSelected: (path) => provider.loadSaveFile(path),
+                itemBuilder: (context) => provider.savedFarms.map((farm) {
+                  final isCurrent = saveData != null &&
+                      saveData.farmerName == farm['farmerName'] &&
+                      saveData.farmName == farm['farmName'];
+                  return PopupMenuItem<String>(
+                    value: farm['savePath'],
+                    child: Row(
+                      children: [
+                        Icon(
+                          isCurrent ? Icons.check_circle : Icons.agriculture,
+                          color: isCurrent ? StardewColors.primaryGold : StardewColors.textMuted,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            '${farm['farmerName']} (${farm['farmName']})',
+                            style: TextStyle(
+                              fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                              color: isCurrent ? StardewColors.primaryGold : StardewColors.textBright,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
             if (saveData != null)
               Padding(
                 padding: const EdgeInsets.only(right: 16.0),
@@ -77,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '${saveData.perfectionPercentage.toStringAsFixed(0)}% Qi',
+                      '${PerfectionService.calculate(saveData).toStringAsFixed(0)}% Qi',
                       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: StardewColors.iridiumPurple),
                     ),
                   ),
@@ -110,20 +150,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemBuilder: (context, index) {
                     final item = navItems[index];
                     final isSelected = _selectedIndex == index;
-                    return ListTile(
-                      leading: Icon(item['icon'] as IconData, color: isSelected ? StardewColors.primaryGold : StardewColors.textMuted),
-                      title: Text(
-                        item['label'] as String,
-                        style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected ? StardewColors.primaryGold : StardewColors.textBright,
+                    return Material(
+                      color: Colors.transparent,
+                      child: ListTile(
+                        leading: Icon(item['icon'] as IconData, color: isSelected ? StardewColors.primaryGold : StardewColors.textMuted),
+                        title: Text(
+                          item['label'] as String,
+                          style: TextStyle(
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected ? StardewColors.primaryGold : StardewColors.textBright,
+                          ),
                         ),
+                        selected: isSelected,
+                        onTap: () {
+                          setState(() => _selectedIndex = index);
+                          Navigator.pop(context);
+                        },
                       ),
-                      selected: isSelected,
-                      onTap: () {
-                        setState(() => _selectedIndex = index);
-                        Navigator.pop(context);
-                      },
                     );
                   },
                 ),
@@ -191,14 +234,29 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Text('v$appVersion', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: StardewColors.iridiumPurple)),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
+                IconButton(
+                  icon: const Icon(Icons.search, color: StardewColors.primaryGold),
+                  tooltip: 'Buscador Universal (Cultivos, Aldeanos...)',
+                  onPressed: () => QuickSearchDialog.show(context),
+                ),
+                const SizedBox(height: 8),
               ],
             ),
             destinations: navItems.map((item) {
               return NavigationRailDestination(
-                icon: Icon(item['icon'] as IconData),
-                selectedIcon: Icon(item['icon'] as IconData, color: StardewColors.primaryGold),
-                label: Text(item['label'] as String),
+                icon: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: Icon(item['icon'] as IconData),
+                ),
+                selectedIcon: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: Icon(item['icon'] as IconData, color: StardewColors.primaryGold),
+                ),
+                label: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: Text(item['label'] as String),
+                ),
               );
             }).toList(),
             trailing: Expanded(
@@ -206,13 +264,58 @@ class _HomeScreenState extends State<HomeScreen> {
                 alignment: Alignment.bottomCenter,
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 16.0),
-                  child: saveData != null && MediaQuery.of(context).size.width > 1100
+                  child: MediaQuery.of(context).size.width > 1100
                       ? Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Divider(),
-                            Text('Granjero: ${saveData.farmerName}', style: const TextStyle(fontSize: 12, color: StardewColors.textMuted)),
-                            Text('Perfección: ${saveData.perfectionPercentage.toStringAsFixed(0)}%', style: const TextStyle(fontSize: 12, color: StardewColors.iridiumPurple, fontWeight: FontWeight.bold)),
+                            if (provider.savedFarms.isNotEmpty)
+                              PopupMenuButton<String>(
+                                tooltip: 'Cambiar de partida activa',
+                                onSelected: (path) => provider.loadSaveFile(path),
+                                itemBuilder: (context) => provider.savedFarms.map((farm) {
+                                  final isCurrent = saveData != null &&
+                                      saveData.farmerName == farm['farmerName'] &&
+                                      saveData.farmName == farm['farmName'];
+                                  return PopupMenuItem<String>(
+                                    value: farm['savePath'],
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          isCurrent ? Icons.check_circle : Icons.agriculture,
+                                          color: isCurrent ? StardewColors.primaryGold : StardewColors.textMuted,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Text('${farm['farmerName']} (${farm['farmName']})'),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: StardewColors.cardBackground,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: StardewColors.primaryGold.withValues(alpha: 0.5)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.agriculture, color: StardewColors.primaryGold, size: 16),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        saveData != null ? saveData.farmerName : 'Partida',
+                                        style: const TextStyle(fontSize: 12, color: StardewColors.textBright, fontWeight: FontWeight.bold),
+                                      ),
+                                      const Icon(Icons.arrow_drop_down, color: StardewColors.primaryGold, size: 18),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: 6),
+                            if (saveData != null)
+                              Text('Perfección: ${PerfectionService.calculate(saveData).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 12, color: StardewColors.iridiumPurple, fontWeight: FontWeight.bold)),
                           ],
                         )
                       : null,

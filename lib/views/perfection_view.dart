@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../application/perfection_service.dart';
 import '../providers/app_state_provider.dart';
 import '../theme/stardew_theme.dart';
 
@@ -10,7 +11,15 @@ class PerfectionView extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<AppStateProvider>(context);
     final saveData = provider.activeSaveData;
-    final totalPerfection = saveData?.perfectionPercentage ?? 0.0;
+
+    final cookedCount = saveData?.cookingRecipes.length ?? 0;
+    final craftedCount = saveData?.craftingRecipes.length ?? 0;
+    final fishCount = saveData?.fishCaught.length ?? 0;
+    final friendshipMaxCount = saveData?.friendships.values.where((f) => f.hearts >= 8).length ?? 0;
+    final obelisksCount = saveData?.obelisksCount ?? 0;
+    final hasGoldenClock = saveData?.hasGoldenClock ?? false;
+
+    final totalPerfection = saveData != null ? PerfectionService.calculate(saveData) : 0.0;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
@@ -22,7 +31,7 @@ class PerfectionView extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [StardewColors.iridiumPurple.withOpacity(0.4), StardewColors.cardBackground],
+                colors: [StardewColors.iridiumPurple.withValues(alpha: 0.4), StardewColors.cardBackground],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -80,38 +89,38 @@ class PerfectionView extends StatelessWidget {
             children: [
               _buildPerfectionCard(
                 title: 'Reloj de Oro de la Granja',
-                subtitle: saveData?.hasGoldenClock == true ? '¡Construido! (10,000,000g)' : 'Pendiente (10,000,000g)',
-                isDone: saveData?.hasGoldenClock ?? false,
+                subtitle: hasGoldenClock ? '¡Construido! (10,000,000g)' : 'Pendiente (10,000,000g)',
+                isDone: hasGoldenClock,
                 icon: Icons.access_time_filled,
               ),
               _buildPerfectionCard(
                 title: 'Obeliscos de Teletransporte',
-                subtitle: '${saveData?.obelisksCount ?? 0} de 4 Obeliscos Construidos',
-                isDone: (saveData?.obelisksCount ?? 0) >= 4,
+                subtitle: '$obelisksCount de 4 Obeliscos Construidos',
+                isDone: obelisksCount >= 4,
                 icon: Icons.account_balance,
               ),
               _buildPerfectionCard(
                 title: 'Recetas de Cocina',
-                subtitle: '${saveData?.cookingRecipes.values.where((c) => c > 0).length ?? 0} Recetas Cocinadas',
-                isDone: false,
+                subtitle: '$cookedCount de 80 Recetas Registradas',
+                isDone: cookedCount >= 80,
                 icon: Icons.restaurant,
               ),
               _buildPerfectionCard(
                 title: 'Objetos de Fabricación (Crafting)',
-                subtitle: '${saveData?.craftingRecipes.values.where((c) => c > 0).length ?? 0} Objetos Fabricados',
-                isDone: false,
+                subtitle: '$craftedCount de 129 Objetos Registrados',
+                isDone: craftedCount >= 129,
                 icon: Icons.construction,
               ),
               _buildPerfectionCard(
                 title: 'Colección de Peces Atrapados',
-                subtitle: '${saveData?.fishCaught.length ?? 0} Especies de Peces Atrapadas',
-                isDone: false,
+                subtitle: '$fishCount de 67 Especies Atrapadas',
+                isDone: fishCount >= 67,
                 icon: Icons.phishing,
               ),
               _buildPerfectionCard(
                 title: 'Amistad Máxima con Aldeanos',
-                subtitle: '${saveData?.friendships.values.where((f) => f.hearts >= 8).length ?? 0} Aldeanos al máximo de corazones',
-                isDone: false,
+                subtitle: '$friendshipMaxCount de 32 Aldeanos a 8+ Corazones',
+                isDone: friendshipMaxCount >= 32,
                 icon: Icons.favorite,
               ),
             ],
@@ -149,7 +158,7 @@ class PerfectionView extends StatelessWidget {
               children: [
                 Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: StardewColors.textBright)),
                 const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(color: StardewColors.textMuted, fontSize: 13)),
+                Text(subtitle, style: TextStyle(color: isDone ? StardewColors.emeraldGreen : StardewColors.textMuted, fontSize: 13, fontWeight: isDone ? FontWeight.bold : FontWeight.normal)),
               ],
             ),
           ],

@@ -1,218 +1,120 @@
 import 'package:flutter/foundation.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import '../database/db_helper.dart';
 import '../models/crop_model.dart';
-import '../models/default_stardew_data.dart';
 import '../models/save_data.dart';
-import '../services/backup_service.dart';
-import '../services/xml_parser_service.dart';
 import '../theme/stardew_theme.dart';
+import 'crop_provider.dart';
+import 'ledger_provider.dart';
+import 'mod_provider.dart';
+import 'save_provider.dart';
+import 'settings_provider.dart';
+import 'task_provider.dart';
+
+/// Provider de compatibilidad — fachada sobre los providers especializados.
+///
+/// Permite que las vistas existentes sigan usando [AppStateProvider]
+/// durante la migración a providers especializados.
+///
+/// MIGRACIÓN: Cada vista debería progresivamente cambiar a usar directamente
+/// [SaveProvider], [CropProvider], [LedgerProvider], [TaskProvider],
+/// [ModProvider] o [SettingsProvider] según corresponda.
+///
+/// Cuando todas las vistas estén migradas, este archivo puede eliminarse.
+import 'planted_crop_provider.dart';
 
 class AppStateProvider extends ChangeNotifier {
-  StardewSaveData? _activeSaveData;
-  List<Map<String, dynamic>> _savedFarms = [];
-  List<CropModel> _allCrops = [];
-  List<Map<String, dynamic>> _ledgerEntries = [];
-  List<Map<String, dynamic>> _tasks = [];
-  
-  bool _isLoadingSave = false;
-  String? _saveErrorMessage;
-  String _selectedSeason = 'Primavera';
+  final SaveProvider _saveProvider;
+  final CropProvider _cropProvider;
+  final LedgerProvider _ledgerProvider;
+  final TaskProvider _taskProvider;
+  final ModProvider _modProvider;
+  final SettingsProvider _settingsProvider;
+  final PlantedCropProvider _plantedCropProvider;
+  String _lastSyncedFarmKey = '';
 
-  // Versión dinámica desde pubspec.yaml
-  String _appVersion = '0.1.0';
-
-  // Opciones de Configuración
-  String _locale = 'es'; // 'es' or 'en'
-  StardewThemeMode _themeMode = StardewThemeMode.iridium;
-
-  // Getters
-  StardewSaveData? get activeSaveData => _activeSaveData;
-  List<Map<String, dynamic>> get savedFarms => _savedFarms;
-  List<CropModel> get allCrops => _allCrops;
-  List<Map<String, dynamic>> get ledgerEntries => _ledgerEntries;
-  List<Map<String, dynamic>> get tasks => _tasks;
-  bool get isLoadingSave => _isLoadingSave;
-  String? get saveErrorMessage => _saveErrorMessage;
-  String get selectedSeason => _selectedSeason;
-  String get appVersion => _appVersion;
-
-  String get locale => _locale;
-  StardewThemeMode get themeMode => _themeMode;
-
-  AppStateProvider() {
-    _initData();
+  AppStateProvider({
+    required SaveProvider saveProvider,
+    required CropProvider cropProvider,
+    required LedgerProvider ledgerProvider,
+    required TaskProvider taskProvider,
+    required ModProvider modProvider,
+    required SettingsProvider settingsProvider,
+    required PlantedCropProvider plantedCropProvider,
+  })  : _saveProvider = saveProvider,
+        _cropProvider = cropProvider,
+        _ledgerProvider = ledgerProvider,
+        _taskProvider = taskProvider,
+        _modProvider = modProvider,
+        _settingsProvider = settingsProvider,
+        _plantedCropProvider = plantedCropProvider {
+    _saveProvider.addListener(_onSaveChanged);
+    _cropProvider.addListener(_relay);
+    _ledgerProvider.addListener(_relay);
+    _taskProvider.addListener(_relay);
+    _modProvider.addListener(_relay);
+    _settingsProvider.addListener(_relay);
+    _plantedCropProvider.addListener(_relay);
   }
 
-  Future<void> _initData() async {
-    _allCrops = List.from(DefaultStardewData.defaultCrops);
-    await _loadAppVersion();
-    await refreshFarms();
-    await refreshLedger();
-    await refreshTasks();
-    await _loadCustomCrops();
-    
-    // Cargar la última partida conocida o por defecto
-    if (_savedFarms.isNotEmpty) {
-      final lastPath = _savedFarms.first['savePath'];
-      await loadSaveFile(lastPath);
-    } else {
-      const defaultSavePath = r'C:\Users\Araxel\AppData\Roaming\StardewValley\Saves\NegroLand_420848748\NegroLand_420848748';
-      await loadSaveFile(defaultSavePath);
-    }
-  }
-
-  Future<void> _loadAppVersion() async {
-    try {
-      final packageInfo = await PackageInfo.fromPlatform();
-      _appVersion = packageInfo.version;
-      notifyListeners();
-    } catch (_) {}
-  }
-
-  void setLocale(String newLocale) {
-    _locale = newLocale;
-    notifyListeners();
-  }
-
-  void setThemeMode(StardewThemeMode mode) {
-    _themeMode = mode;
-    notifyListeners();
-  }
-
-  void setSelectedSeason(String season) {
-    _selectedSeason = season;
-    notifyListeners();
-  }
-
-  // --- Múltiples Partidas / Granjas ---
-  Future<void> refreshFarms() async {
-    _savedFarms = await DBHelper.getSavedFarms();
-    notifyListeners();
-  }
-
-  Future<void> loadSaveFile(String filePath) async {
-    _isLoadingSave = true;
-    _saveErrorMessage = null;
-    notifyListeners();
-
-    try {
-      final saveData = await XmlParserService.parseSaveFile(filePath);
-      _activeSaveData = saveData;
-      _isLoadingSave = false;
-
-      await DBHelper.saveFarmRecord(
-        farmerName: saveData.farmerName,
-        farmName: saveData.farmName,
-        gold: saveData.currentMoney,
-        savePath: filePath,
-      );
-      await refreshFarms();
-      notifyListeners();
-    } catch (e) {
-      _saveErrorMessage = e.toString();
-      _isLoadingSave = false;
-      notifyListeners();
-    }
-  }
-
-  // --- Respaldos JSON ---
-  Future<String?> exportDataBackup() async {
-    return await BackupService.exportBackup();
-  }
-
-  Future<bool> importDataBackup(String filePath) async {
-    final success = await BackupService.importBackup(filePath);
-    if (success) {
-      await refreshFarms();
-      await refreshLedger();
-      await refreshTasks();
-      await _loadCustomCrops();
-      notifyListeners();
-    }
-    return success;
-  }
-
-  // --- SQLite Financial Ledger Operations ---
-  Future<void> refreshLedger() async {
-    _ledgerEntries = await DBHelper.getLedgerEntries();
-    notifyListeners();
-  }
-
-  Future<void> addLedgerEntry({
-    required String title,
-    required String type,
-    required String category,
-    required double amount,
-    required String date,
-    String? notes,
-  }) async {
-    await DBHelper.insertLedger({
-      'title': title,
-      'type': type,
-      'category': category,
-      'amount': amount,
-      'date': date,
-      'notes': notes ?? '',
-    });
-    await refreshLedger();
-  }
-
-  Future<void> deleteLedgerEntry(int id) async {
-    await DBHelper.deleteLedgerEntry(id);
-    await refreshLedger();
-  }
-
-  // --- SQLite Tasks Operations ---
-  Future<void> refreshTasks() async {
-    _tasks = await DBHelper.getTasks();
-    notifyListeners();
-  }
-
-  Future<void> addTask({
-    required String title,
-    required String season,
-    required int day,
-    String category = 'General',
-  }) async {
-    await DBHelper.insertTask({
-      'title': title,
-      'season': season,
-      'day': day,
-      'year': 1,
-      'isCompleted': 0,
-      'category': category,
-    });
-    await refreshTasks();
-  }
-
-  Future<void> toggleTask(int id, bool currentStatus) async {
-    await DBHelper.updateTaskStatus(id, !currentStatus);
-    await refreshTasks();
-  }
-
-  Future<void> deleteTask(int id) async {
-    await DBHelper.deleteTask(id);
-    await refreshTasks();
-  }
-
-  // --- Custom Mod Crops ---
-  Future<void> _loadCustomCrops() async {
-    final customCropsList = await DBHelper.getCustomCrops();
-    for (var map in customCropsList) {
-      _allCrops.add(CropModel(
-        id: 'custom_${map['id']}',
-        name: map['name'],
-        season: map['season'],
-        seedCost: (map['seedCost'] as num).toDouble(),
-        baseSellPrice: (map['sellPrice'] as num).toDouble(),
-        daysToGrow: map['daysToGrow'] as int,
-        regrowDays: map['regrowDays'] as int,
-        sourceMod: map['sourceMod'] ?? 'Custom Mod',
-      ));
+  void _onSaveChanged() {
+    final currentKey = _saveProvider.activeFarmKey;
+    if (currentKey != _lastSyncedFarmKey) {
+      _lastSyncedFarmKey = currentKey;
+      _taskProvider.setFarmKey(currentKey);
+      _plantedCropProvider.setFarmKey(currentKey);
+      _ledgerProvider.setFarmKey(currentKey);
     }
     notifyListeners();
   }
+
+  void _relay() => notifyListeners();
+
+  @override
+  void dispose() {
+    _saveProvider.removeListener(_relay);
+    _cropProvider.removeListener(_relay);
+    _ledgerProvider.removeListener(_relay);
+    _taskProvider.removeListener(_relay);
+    _modProvider.removeListener(_relay);
+    _settingsProvider.removeListener(_relay);
+    super.dispose();
+  }
+
+  // ─── Getters de compatibilidad (delegación) ───────────────
+
+  // SaveProvider
+  StardewSaveData? get activeSaveData => _saveProvider.activeSaveData;
+  List<Map<String, dynamic>> get savedFarms => _saveProvider.savedFarms;
+  bool get isLoadingSave => _saveProvider.isLoadingSave;
+  String? get saveErrorMessage => _saveProvider.saveErrorMessage;
+
+  // CropProvider
+  List<CropModel> get allCrops => _cropProvider.allCrops;
+
+  // LedgerProvider
+  List<Map<String, dynamic>> get ledgerEntries => _ledgerProvider.ledgerEntries;
+
+  // TaskProvider
+  List<Map<String, dynamic>> get tasks => _taskProvider.tasks;
+
+  // ModProvider
+  List<StardewModInfo> get installedMods => _modProvider.installedMods;
+  String? get customModsFolderPath => _modProvider.customModsFolderPath;
+
+  // SettingsProvider
+  String get locale => _settingsProvider.locale;
+  StardewThemeMode get themeMode => _settingsProvider.themeMode;
+  String get appVersion => _settingsProvider.appVersion;
+
+  // ─── Métodos de compatibilidad (delegación) ──────────────
+
+  Future<void> scanAndLoadSaves() => _saveProvider.scanAndLoadSaves();
+  Future<void> loadSaveFile(String filePath, {bool forceReload = false}) =>
+      _saveProvider.loadSaveFile(filePath, forceReload: forceReload);
+  Future<void> refreshFarms({bool shouldNotify = true}) =>
+      _saveProvider.refreshFarms(shouldNotify: shouldNotify);
+  Future<String?> exportDataBackup() => _saveProvider.exportDataBackup();
+  Future<bool> importDataBackup(String filePath) =>
+      _saveProvider.importDataBackup(filePath);
 
   Future<void> addCustomCrop({
     required String name,
@@ -222,27 +124,46 @@ class AppStateProvider extends ChangeNotifier {
     required int daysToGrow,
     int regrowDays = 0,
     required String sourceMod,
-  }) async {
-    await DBHelper.insertCustomCrop({
-      'name': name,
-      'season': season,
-      'seedCost': seedCost,
-      'sellPrice': sellPrice,
-      'daysToGrow': daysToGrow,
-      'regrowDays': regrowDays,
-      'sourceMod': sourceMod,
-    });
-    
-    _allCrops.add(CropModel(
-      id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
-      name: name,
-      season: season,
-      seedCost: seedCost,
-      baseSellPrice: sellPrice,
-      daysToGrow: daysToGrow,
-      regrowDays: regrowDays,
-      sourceMod: sourceMod,
-    ));
-    notifyListeners();
-  }
+  }) => _cropProvider.addCustomCrop(
+        name: name, season: season, seedCost: seedCost, sellPrice: sellPrice,
+        daysToGrow: daysToGrow, regrowDays: regrowDays, sourceMod: sourceMod,
+      );
+
+  Future<void> refreshLedger({bool shouldNotify = true}) =>
+      _ledgerProvider.refreshLedger(shouldNotify: shouldNotify);
+  Future<void> addLedgerEntry({
+    required String title,
+    required String type,
+    required String category,
+    required double amount,
+    required String date,
+    String? notes,
+  }) => _ledgerProvider.addLedgerEntry(
+        title: title, type: type, category: category,
+        amount: amount, date: date, notes: notes,
+      );
+  Future<void> deleteLedgerEntry(int id) =>
+      _ledgerProvider.deleteLedgerEntry(id);
+
+  Future<void> refreshTasks({bool shouldNotify = true}) =>
+      _taskProvider.refreshTasks(shouldNotify: shouldNotify);
+  Future<void> addTask({
+    required String title,
+    required String season,
+    required int day,
+    String category = 'General',
+  }) => _taskProvider.addTask(
+        title: title, season: season, day: day, category: category,
+      );
+  Future<void> toggleTask(int id, bool currentStatus) =>
+      _taskProvider.toggleTask(id, currentStatus);
+  Future<void> deleteTask(int id) => _taskProvider.deleteTask(id);
+
+  Future<void> scanInstalledMods({String? customPath, bool shouldNotify = true}) =>
+      _modProvider.scanInstalledMods(
+          customPath: customPath, shouldNotify: shouldNotify);
+
+  void setLocale(String newLocale) => _settingsProvider.setLocale(newLocale);
+  void setThemeMode(StardewThemeMode mode) =>
+      _settingsProvider.setThemeMode(mode);
 }

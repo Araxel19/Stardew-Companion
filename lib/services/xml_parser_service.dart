@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:xml/xml.dart';
+import '../core/constants/stardew_constants.dart';
 import '../models/save_data.dart';
+import '../models/villager_friendship.dart';
 
 class XmlParserService {
   static Future<StardewSaveData> parseSaveFile(String filePath) async {
@@ -12,55 +14,58 @@ class XmlParserService {
     final xmlString = await file.readAsString();
     final document = XmlDocument.parse(xmlString);
 
-    // Intentar buscar el nodo principal de Farmer o SaveGame
-    final farmerNode = document.findAllElements('Farmer').firstOrNull ??
-        document.findAllElements('player').firstOrNull ??
+    // Buscar el nodo principal player (o Farmer en multijugador)
+    final farmerNode = document.findAllElements('player').firstOrNull ??
+        document.findAllElements('Farmer').firstOrNull ??
         document.rootElement;
 
     // 1. Información Básica del Granjero
-    final name = farmerNode.findElements('name').firstOrNull?.innerText ?? 'Granjero';
-    final farmName = farmerNode.findElements('farmName').firstOrNull?.innerText ?? 'Granja';
-    final money = int.tryParse(farmerNode.findElements('money').firstOrNull?.innerText ?? '0') ?? 0;
-    final totalEarnings = int.tryParse(farmerNode.findElements('totalMoneyEarned').firstOrNull?.innerText ?? '0') ?? 0;
+    final name = _getXmlText(farmerNode, 'name') ?? 'Granjero';
+    final farmName = _getXmlText(farmerNode, 'farmName') ?? 'Granja';
+    final money = int.tryParse(_getXmlText(farmerNode, 'money') ?? '0') ?? 0;
+    final totalEarnings = int.tryParse(_getXmlText(farmerNode, 'totalMoneyEarned') ?? '0') ?? 0;
 
     final gameYear = int.tryParse(document.findAllElements('year').firstOrNull?.innerText ?? '1') ?? 1;
     final gameSeason = document.findAllElements('currentSeason').firstOrNull?.innerText ?? 'Primavera';
     final gameDay = int.tryParse(document.findAllElements('dayOfMonth').firstOrNull?.innerText ?? '1') ?? 1;
-    final milliseconds = double.tryParse(farmerNode.findElements('millisecondsPlayed').firstOrNull?.innerText ?? '0') ?? 0;
+    final milliseconds = double.tryParse(_getXmlText(farmerNode, 'millisecondsPlayed') ?? '0') ?? 0;
     final playtimeHours = milliseconds / (1000 * 60 * 60);
 
     // 2. Recetas de Cocina
     final Map<String, int> cookingRecipes = {};
-    final cookingNode = farmerNode.findElements('cookingRecipes').firstOrNull;
+    final cookingNode = farmerNode.findElements('cookingRecipes').firstOrNull ??
+        document.findAllElements('cookingRecipes').firstOrNull;
     if (cookingNode != null) {
       for (var item in cookingNode.findElements('item')) {
-        final key = item.findElements('key').firstOrNull?.innerText ?? '';
-        final val = int.tryParse(item.findElements('value').firstOrNull?.innerText ?? '0') ?? 0;
+        final key = _extractItemKey(item);
+        final val = _extractItemValue(item);
         if (key.isNotEmpty) cookingRecipes[key] = val;
       }
     }
 
     // 3. Recetas de Fabricación (Crafting)
     final Map<String, int> craftingRecipes = {};
-    final craftingNode = farmerNode.findElements('craftingRecipes').firstOrNull;
+    final craftingNode = farmerNode.findElements('craftingRecipes').firstOrNull ??
+        document.findAllElements('craftingRecipes').firstOrNull;
     if (craftingNode != null) {
       for (var item in craftingNode.findElements('item')) {
-        final key = item.findElements('key').firstOrNull?.innerText ?? '';
-        final val = int.tryParse(item.findElements('value').firstOrNull?.innerText ?? '0') ?? 0;
+        final key = _extractItemKey(item);
+        final val = _extractItemValue(item);
         if (key.isNotEmpty) craftingRecipes[key] = val;
       }
     }
 
     // 4. Amistad con Aldeanos (Friendships)
     final Map<String, VillagerFriendship> friendships = {};
-    final friendshipNode = farmerNode.findElements('friendshipData').firstOrNull;
+    final friendshipNode = farmerNode.findElements('friendshipData').firstOrNull ??
+        document.findAllElements('friendshipData').firstOrNull;
     if (friendshipNode != null) {
       for (var item in friendshipNode.findElements('item')) {
-        final key = item.findElements('key').firstOrNull?.innerText ?? '';
+        final key = _extractItemKey(item);
         final valNode = item.findElements('value').firstOrNull;
-        final pointsNode = valNode?.findElements('FriendshipData').firstOrNull?.findElements('Points').firstOrNull ??
-            valNode?.findElements('Points').firstOrNull;
-        final points = int.tryParse(pointsNode?.innerText ?? '0') ?? 0;
+        final pointsStr = valNode?.findAllElements('Points').firstOrNull?.innerText ??
+            valNode?.innerText ?? '0';
+        final points = int.tryParse(pointsStr.trim()) ?? 0;
         final hearts = points ~/ 250;
 
         if (key.isNotEmpty) {
@@ -76,31 +81,48 @@ class XmlParserService {
 
     // 5. Peces Atrapados
     final Map<String, int> fishCaught = {};
-    final fishNode = farmerNode.findElements('fishCaught').firstOrNull;
+    final fishNode = farmerNode.findElements('fishCaught').firstOrNull ??
+        document.findAllElements('fishCaught').firstOrNull;
     if (fishNode != null) {
       for (var item in fishNode.findElements('item')) {
-        final key = item.findElements('key').firstOrNull?.innerText ?? '';
-        final countStr = item.findElements('value').firstOrNull?.findElements('int').firstOrNull?.innerText ?? '1';
-        final count = int.tryParse(countStr) ?? 1;
-        if (key.isNotEmpty) fishCaught[key] = count;
+        final key = _extractItemKey(item);
+        final val = _extractItemValue(item);
+        if (key.isNotEmpty) fishCaught[key] = val > 0 ? val : 1;
       }
     }
 
     // 6. Envíos (Basic Shipped)
     final Map<String, int> shippingItems = {};
-    final shipNode = farmerNode.findElements('basicShipped').firstOrNull;
+    final shipNode = farmerNode.findElements('basicShipped').firstOrNull ??
+        document.findAllElements('basicShipped').firstOrNull;
     if (shipNode != null) {
       for (var item in shipNode.findElements('item')) {
-        final key = item.findElements('key').firstOrNull?.innerText ?? '';
-        final val = int.tryParse(item.findElements('value').firstOrNull?.innerText ?? '0') ?? 0;
+        final key = _extractItemKey(item);
+        final val = _extractItemValue(item);
         if (key.isNotEmpty) shippingItems[key] = val;
       }
     }
 
-    // 7. Detección de Mods
+    // 7. Detección de Mods en XML
     final Set<String> detectedMods = {};
     final modDataNode = farmerNode.findElements('modData').firstOrNull;
     if (modDataNode != null) {
+      for (var item in modDataNode.findElements('item')) {
+        final keyNode = item.findElements('key').firstOrNull ?? item.findElements('string').firstOrNull;
+        if (keyNode != null) {
+          final keyText = keyNode.innerText.trim();
+          if (keyText.isNotEmpty) {
+            String cleanModName = keyText;
+            if (cleanModName.contains('.')) {
+              cleanModName = cleanModName.split('.').last;
+            }
+            if (cleanModName.contains('/')) {
+              cleanModName = cleanModName.split('/').last;
+            }
+            detectedMods.add(cleanModName);
+          }
+        }
+      }
       final xmlText = modDataNode.innerText;
       if (xmlText.contains('RSV') || xmlText.contains('Ridgeside')) detectedMods.add('Ridgeside Village');
       if (xmlText.contains('SVE') || xmlText.contains('Expanded')) detectedMods.add('Stardew Valley Expanded');
@@ -138,13 +160,27 @@ class XmlParserService {
     );
   }
 
+  static String? _getXmlText(XmlElement parent, String tag) {
+    return parent.findElements(tag).firstOrNull?.innerText ??
+        parent.findAllElements(tag).firstOrNull?.innerText;
+  }
+
+  static String _extractItemKey(XmlElement item) {
+    final keyNode = item.findElements('key').firstOrNull;
+    if (keyNode == null) return '';
+    final strNode = keyNode.findElements('string').firstOrNull ?? keyNode.findAllElements('string').firstOrNull;
+    return (strNode?.innerText ?? keyNode.innerText).trim();
+  }
+
+  static int _extractItemValue(XmlElement item) {
+    final valNode = item.findElements('value').firstOrNull;
+    if (valNode == null) return 0;
+    final intNode = valNode.findElements('int').firstOrNull ?? valNode.findAllElements('int').firstOrNull;
+    final text = (intNode?.innerText ?? valNode.innerText).trim();
+    return int.tryParse(text) ?? 0;
+  }
+
   static bool _isModdedVillager(String name) {
-    const vanillaVillagers = {
-      'Abigail', 'Alex', 'Caroline', 'Clint', 'Demetrius', 'Dwarf', 'Elliott',
-      'Emily', 'Evelyn', 'George', 'Gus', 'Haley', 'Harvey', 'Jas', 'Jodi',
-      'Kent', 'Krobus', 'Leah', 'Leo', 'Lewis', 'Linus', 'Marnie', 'Maru',
-      'Pam', 'Penny', 'Pierre', 'Robin', 'Sam', 'Sebastian', 'Shane', 'Willy', 'Wizard'
-    };
-    return !vanillaVillagers.contains(name);
+    return !StardewConstants.vanillaVillagers.contains(name);
   }
 }
